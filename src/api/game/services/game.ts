@@ -13,7 +13,16 @@ const developerService = "api::developer.developer";
 const categoryService = "api::category.category";
 const platformService = "api::platform.platform";
 
+function timeout(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function Exception(e) {
+    return { e, data: e.data && e.data.errors && e.data.errors };
+}
+
 async function getGameInfo(slug) {
+    try {
+
     const gogSlug = slug.replaceAll('-', '_').toLowerCase();
 
     const body = await axios.get(`https://www.gog.com/game/${gogSlug}`);
@@ -26,6 +35,7 @@ async function getGameInfo(slug) {
     const ratingElement = dom.window.document.querySelector(
         ".age-restrictions__icon use"
     );
+
     return {
         description,
         short_description,
@@ -36,16 +46,25 @@ async function getGameInfo(slug) {
         .replace("#", "")
         : "BR0",
     };
+} catch (error) {
+    console.log("getGameInfo:", Exception(error));
+ }
 }
 
 async function getByName(name, entityService) {
+    try {
     const item = await strapi.service(entityService).find({
         filters: { name },
     });
+
     return item.results.length > 0 ? item.results[0] : null;
+} catch (error) {
+    console.log("getByName:", Exception(error));
+ }
 }
 
 async function create(name, entityService) {
+    try {
     const item = await getByName(name, entityService);
 
     if (!item) {
@@ -56,6 +75,9 @@ async function create(name, entityService) {
             },
         });
     }
+} catch (error) {
+    console.log("create:", Exception(error));
+ }
 }
 
 async function createManyToManyData(products) {
@@ -109,7 +131,8 @@ async function createManyToManyData(products) {
         formData.append("files", buffer, { filename: `${game.slug}.jpg` });
 
         console.info(`Uploading ${field} image: ${game.slug}.jpg`);
-        
+
+       try {
         await axios({
           method: "POST",
           url: `http://localhost:1337/api/upload/`,
@@ -118,14 +141,19 @@ async function createManyToManyData(products) {
             "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
           },
         });
+      } catch (error) {
+        console.log("setImage:", Exception(error));
       }
+    }
 
     async function createGames(products) {
         await Promise.all(
           products.map(async (product) => {
             const item = await getByName(product.title, gameService);
+
             if (!item) {
               console.info(`Creating: ${product.title}...`);
+              
               const game = await strapi.service(`${gameService}`).create({
                 data: {
                   name: product.title,
@@ -178,13 +206,17 @@ async function createManyToManyData(products) {
 
 export default factories.createCoreService(gameService, () => ({
     async populate(params) {
+      try {
        const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc%3Atrending`;
 
        const {
         data: { products },
        } = await axios.get(gogApiUrl);
 
-       await createManyToManyData([products[0], products[2]]);
-       await createGames([products[0], products[2]]);
+       await createManyToManyData( products);
+       await createGames(products);
+    } catch (error) {
+        console.log("populate:", Exception(error));
+    }
     },
 }));
