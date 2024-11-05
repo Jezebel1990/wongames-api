@@ -17,11 +17,13 @@
     "@strapi/plugin-graphql": "^5.2.0",
     "@strapi/plugin-users-permissions": "5.1.1",
     "@strapi/strapi": "5.1.1",
+    "jsdom": "^25.0.1",
     "patch-package": "^8.0.0",
     "pg": "8.8.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
+    "slugify": "^1.6.6",
     "styled-components": "^6.0.0"
   },
   "devDependencies": {

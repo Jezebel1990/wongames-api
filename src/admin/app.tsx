@@ -25,11 +25,11 @@ export default {
       light: {},
       dark: {
         colors: {
-          primary100: "#030415",
+          primary100: "#111111",
           primary600: "#53F9FF",
           primary700: "#53F9FF",
-          neutral0: "#0d102f",
-          neutral100: "#030415",
+          neutral0: "#191919",
+          neutral100: "#111111",
         },
       },
     },
