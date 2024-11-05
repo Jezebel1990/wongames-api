@@ -7,6 +7,11 @@ import { JSDOM } from 'jsdom';
 import slugify from 'slugify';
 import { factories } from '@strapi/strapi';
 
+const gameService = "api::game.game";
+const publisherService = "api::publisher.publisher";
+const developerService = "api::developer.developer";
+const categoryService = "api::category.category";
+const platformService = "api::platform.platform";
 
 async function getGameInfo(slug) {
     const gogSlug = slug.replaceAll('-', '_').toLowerCase();
@@ -53,26 +58,53 @@ async function create(name, entityService) {
     }
 }
 
+async function createManyToManyData(products) {
+    const developersSet = new Set();
+    const publishersSet = new Set();
+    const categoriesSet = new Set();
+    const platformsSet = new Set();
+  
+    products.forEach((product) => {
+      const { developers, publishers, genres, operatingSystems } = product;
+  
+      genres?.forEach(({ name }) => {
+        categoriesSet.add(name);
+      });
+  
+      operatingSystems?.forEach((item) => {
+        platformsSet.add(item);
+      });
+  
+      developers?.forEach((item) => {
+        developersSet.add(item);
+      });
+  
+      publishers?.forEach((item) => {
+        publishersSet.add(item);
+      });
+    });
 
-export default factories.createCoreService('api::game.game', () => ({
+    const createCall = (set, entityName) =>
+        Array.from(set).map((name) => create(name, entityName));
+    
+      return Promise.all([
+        ...createCall(developersSet, developerService),
+        ...createCall(publishersSet, publisherService),
+        ...createCall(categoriesSet, categoryService),
+        ...createCall(platformsSet, platformService),
+      ]);
+    }
+
+
+export default factories.createCoreService(gameService, () => ({
     async populate(params) {
        const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc%3Atrending`;
 
        const {
         data: { products},
        } = await axios.get(gogApiUrl);
-       
-     products[2].developers.map(async (developer) => {
-       await create(developer, "api::developer.developer");
-        });
+
+       await createManyToManyData([products[0], products[1]]);
    
-    products[2].publishers.map(async (publisher) => {
-        await create(publisher, "api::publisher.publisher");
-    });
-
-    products[2].genres.map(async ({ name }) => {
-        await create(name, "api::category.category");
-    });
-
     },
 }));
